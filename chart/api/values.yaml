@@ -1,6 +1,6 @@
-version: v2
+version: v3
 
-replicas: 2
+replicas: 1
 
 image:
   repository: hashicorp/http-echo

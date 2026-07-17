@@ -9,15 +9,12 @@ spec:
     repoURL: https://github.com/umjoshua/cncf-kagent-demo.git
     targetRevision: HEAD
     path: chart/api
-    helm:
-      valuesObject:
-        version: v1
   destination:
     server: https://kubernetes.default.svc
     namespace: demo
   syncPolicy:
-    automated:
-      selfHeal: false
-      prune: false
+    # automated:
+    #   selfHeal: false
+    #   prune: false
     syncOptions:
       - CreateNamespace=true
