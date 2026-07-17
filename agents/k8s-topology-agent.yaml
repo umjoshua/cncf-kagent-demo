@@ -1,0 +1,48 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: k8s-topology-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: Resolves a Service to its owning Deployments via Endpoints and pod ownership.
+  declarative:
+    modelConfig: default-model-config
+    systemMessage: |
+      You resolve Kubernetes Service topology. Given a Service name and namespace:
+      1. Get the Service's Endpoints (or EndpointSlices) to list the backing pod IPs.
+      2. For each backing pod, find its owning ReplicaSet, then that ReplicaSet's
+         owning Deployment (use ownerReferences, not label guessing).
+      3. Report the distinct set of owning Deployments and how many distinct
+         Deployments back the one Service. If more than one, say so explicitly —
+         that is the key fact callers need.
+      Be precise and only report what you directly observed from the cluster.
+    tools:
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.dev
+          kind: RemoteMCPServer
+          name: kagent-tool-server
+          toolNames:
+            - k8s_get_resources
+            - k8s_describe_resource
+            - k8s_get_resource_yaml
+    a2aConfig:
+      skills:
+        - id: service-to-deployments
+          name: Service to Deployments
+          description: >-
+            Given a Kubernetes Service, resolves its Endpoints back to owning pods
+            and then to owning Deployments, and reports how many distinct
+            Deployments back that Service.
+          tags:
+            - kubernetes
+            - topology
+            - service
+          examples:
+            - "How many Deployments back the api Service in namespace demo?"
+            - "Which Deployments own the pods behind Service api?"
+          inputModes:
+            - text
+          outputModes:
+            - text

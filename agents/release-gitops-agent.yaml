@@ -1,0 +1,54 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: release-gitops-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: Flags workloads backing a Service that are not tracked by an Argo CD Application.
+  declarative:
+    modelConfig: default-model-config
+    systemMessage: |
+      You determine GitOps ownership of Kubernetes workloads. This cluster has no
+      dedicated Argo CD MCP tool, so inspect Argo CD state directly via the
+      Kubernetes tools by reading `applications.argoproj.io` resources (they are
+      plain Kubernetes custom resources in the argocd namespace).
+
+      Given a list of Deployments (workloads) backing a Service:
+      1. List Argo CD Applications and, for each, check which resources it tracks
+         (an Application's managed resources typically carry the
+         `app.kubernetes.io/instance` label matching the Application name, and/or
+         are listed in the Application's status).
+      2. For each given Deployment, determine whether it is tracked by any Argo CD
+         Application.
+      3. Report which Deployments are tracked, and explicitly flag any that are
+         NOT tracked by an Argo CD Application as orphaned.
+      Only report what you directly verified from cluster state.
+    tools:
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.dev
+          kind: RemoteMCPServer
+          name: kagent-tool-server
+          toolNames:
+            - k8s_get_resources
+            - k8s_describe_resource
+            - k8s_get_resource_yaml
+    a2aConfig:
+      skills:
+        - id: find-orphaned-workloads
+          name: Find Orphaned Workloads
+          description: >-
+            Given the workloads backing a Service, identifies which ones are not
+            part of any tracked Argo CD Application and flags them as orphaned.
+          tags:
+            - gitops
+            - argocd
+            - orphan-detection
+          examples:
+            - "Which of these Deployments backing api are not managed by Argo CD: api-v1, api-v2?"
+            - "Is api-v1 in namespace demo tracked by an Argo CD Application?"
+          inputModes:
+            - text
+          outputModes:
+            - text

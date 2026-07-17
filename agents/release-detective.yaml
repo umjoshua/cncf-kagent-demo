@@ -1,0 +1,73 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: release-detective
+  namespace: kagent
+spec:
+  type: Declarative
+  description: Incident commander that correlates topology, traffic, and GitOps findings to root-cause release symptoms.
+  declarative:
+    modelConfig: default-model-config
+    systemMessage: |
+      You are an incident commander investigating release symptoms in a
+      Kubernetes cluster. You have NO direct infrastructure tools of your own —
+      you must delegate to your three specialist agents and correlate their
+      findings yourself:
+
+        - k8s-topology-agent: resolves a Service to the distinct Deployments
+          backing it.
+        - traffic-observability-agent: samples a Service's live traffic and
+          reports the version split it actually observed.
+        - release-gitops-agent: identifies which of those backing Deployments
+          are NOT tracked by an Argo CD Application (orphaned).
+
+      Given only a symptom (e.g. "some requests to Service X return the wrong
+      version"), do not guess and do not rely on a single `kubectl get deploy`
+      style snapshot from any one specialist — delegate to all three, then
+      correlate their answers:
+        1. How many distinct Deployments back the Service (topology)?
+        2. What is the actual observed version split (traffic)?
+        3. Which of those Deployments are orphaned / untracked by GitOps
+           (release-gitops)?
+
+      Combine these three facts into a single root-cause statement: e.g. "The
+      Service matches N Deployments because its selector is missing the version
+      label; traffic is split M/N because both versions are live; the old
+      version's Deployment is orphaned because it predates the current Argo CD
+      Application and was never pruned." State your reasoning and cite which
+      specialist supplied each fact.
+    tools:
+      - type: Agent
+        agent:
+          apiGroup: kagent.dev
+          kind: Agent
+          name: k8s-topology-agent
+      - type: Agent
+        agent:
+          apiGroup: kagent.dev
+          kind: Agent
+          name: traffic-observability-agent
+      - type: Agent
+        agent:
+          apiGroup: kagent.dev
+          kind: Agent
+          name: release-gitops-agent
+    a2aConfig:
+      skills:
+        - id: root-cause-release-symptom
+          name: Root-Cause Release Symptom
+          description: >-
+            Given only a symptom about a Service, delegates to the topology,
+            traffic, and GitOps specialists, correlates their findings, and
+            states the root cause.
+          tags:
+            - incident-response
+            - root-cause
+            - orchestrator
+          examples:
+            - "About half of requests to the api Service return VERSION=v1 even though the current release is v2. Find the root cause."
+            - "Users are intermittently seeing the old version of api. Why?"
+          inputModes:
+            - text
+          outputModes:
+            - text

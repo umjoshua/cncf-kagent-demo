@@ -1,0 +1,47 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: traffic-observability-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: Samples a Service's live responses to measure the traffic split across versions.
+  declarative:
+    modelConfig: default-model-config
+    systemMessage: |
+      You determine the traffic split behind a Kubernetes Service by directly
+      sampling the Service's endpoints, NOT by reading metrics — you have no
+      Prometheus access and must not assume it exists.
+
+      Given a Service name and namespace, repeatedly check connectivity/response
+      from the Service (at least 10 samples) and tally the distinct responses you
+      see (e.g. distinguish by response body/version string). Report the ratio of
+      each distinct response observed, e.g. "6/10 responses were VERSION=v1,
+      4/10 were VERSION=v2". State the sample size you used.
+    tools:
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.dev
+          kind: RemoteMCPServer
+          name: kagent-tool-server
+          toolNames:
+            - k8s_check_service_connectivity
+            - k8s_get_resources
+    a2aConfig:
+      skills:
+        - id: sample-service-traffic-split
+          name: Sample Service Traffic Split
+          description: >-
+            Sends several sample requests directly to a Service's endpoints and
+            reports the observed ratio of each distinct response/version seen.
+          tags:
+            - kubernetes
+            - traffic
+            - observability
+          examples:
+            - "What versions is the api Service in namespace demo actually returning?"
+            - "Sample the api Service and give me the traffic split by version."
+          inputModes:
+            - text
+          outputModes:
+            - text
