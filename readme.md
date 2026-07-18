@@ -51,8 +51,8 @@ README.md         This file
    ```
 
 2. Bump the release: edit `chart/api/values.yaml` to `version: v2`, commit and
-   push, then let Argo CD auto-sync (or `argocd app sync api`). Because
-   `prune: false`, this creates `api-v2` alongside the still-running `api-v1` -
+   push, while keeping auto sync off. Manually sync the project, with 'prune' option and selecting 'Orphan' as the pruning strategy.
+   this creates `api-v2` alongside the still-running `api-v1` -
    both now match the `api` Service's selector.
 
    > Producing the actual leftover/orphaned old-version Deployment for the live
